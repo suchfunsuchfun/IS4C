@@ -1,6 +1,6 @@
 Name: it-core
 Version: 1.0.0
-Release: 2011.08.10
+Release: 2012.06.19
 Summary: IT CORE Point of Sale
 AutoReqProv: no
 Group:  Applications/Internet
