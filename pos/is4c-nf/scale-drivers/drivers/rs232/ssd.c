@@ -52,8 +52,8 @@
 #include <ctype.h>
 
 #define SSD_SERIAL_PORT "/dev/ttyS0"
-#define SCALE_OUTPUT_FILE "scale-drivers/drivers/rs232/scale"
-#define SCANNER_OUTPUT_FILE "scale-drivers/drivers/rs232/scanner"
+#define SCALE_OUTPUT_FILE "/pos/pos/is4c-nf/scale-drivers/drivers/rs232/scale"
+#define SCANNER_OUTPUT_FILE "/pos/pos/is4c-nf/scale-drivers/drivers/rs232/scanner"
 
 int main(void) {
     /* Our process ID and Session ID */

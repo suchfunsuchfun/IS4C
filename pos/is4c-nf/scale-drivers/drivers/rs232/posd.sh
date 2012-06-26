@@ -17,7 +17,7 @@ fi
 
 # --CONSTANTS- - - - - - - - - - - - - - - - - - - -
 
-POSD=posdriver2-ssd-debian
+POSD=posdriver-ssd-debian
 
 # --VARIABLES- - - - - - - - - - - - - - - - - - - -
 
