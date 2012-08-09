@@ -70,6 +70,7 @@ class CaseDiscount extends Parser {
 			</tr>
 			</table>";
 	}
+	
 }
 
 ?>
