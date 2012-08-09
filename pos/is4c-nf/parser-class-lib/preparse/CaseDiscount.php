@@ -25,8 +25,8 @@ class CaseDiscount extends Parser {
 	
 	function check($str){
 		// force quantity == 1
-		if (strstr($str,"CT") && !strstr($str,"*"))
-			return True;
+		if (strstr($str,"CT") && !strstr($str,"*")){
+			return True;}
 		return False;
 	}
 
