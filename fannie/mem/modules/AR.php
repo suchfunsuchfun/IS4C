@@ -33,8 +33,8 @@ class AR extends MemberModule {
 		
 		$infoQ = sprintf("SELECT c.memDiscountLimit,n.balance
 				FROM custdata AS c LEFT JOIN
-				{$trans}.newBalanceToday_cust AS n ON
-				c.CardNo=n.memnum
+				{$trans}.ar_live_balance AS n ON
+				c.CardNo=n.card_no
 				WHERE c.CardNo=%d AND c.personNum=1",$memNum);
 		$infoR = $dbc->query($infoQ);
 		$infoW = $dbc->fetch_row($infoR);
@@ -59,12 +59,13 @@ class AR extends MemberModule {
 	}
 
 	function SaveFormData($memNum){
+		global $FANNIE_ROOT;
 		$dbc = $this->db();
+		if (!class_exists("CustdataController"))
+			include($FANNIE_ROOT.'classlib2.0/data/controllers/CustdataController.php');
 
-		$saveQ = sprintf("UPDATE custdata SET memDiscountLimit=%f
-				WHERE CardNo=%d",$_REQUEST['AR_limit'],
-				$memNum);
-		$test = $dbc->query($saveQ);
+		$test = CustdataController::update($memNum,
+				array('MemDiscountLimit' => $_REQUEST['AR_limit']));
 		
 		if ($test === False)
 			return 'Error: Problme saving A/R limit<br />';

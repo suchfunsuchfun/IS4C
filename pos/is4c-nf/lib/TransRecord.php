@@ -21,6 +21,13 @@
 
 *********************************************************************************/
 
+
+/* --COMMENTS - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	* 19Jan2013 Eric Lee Fix typo "Datbase" in reverseTaxExempt
+
+*/
+
 /**
   @class TransRecord
   Defines functions for adding records to the transaction
@@ -218,6 +225,42 @@ static public function addItem($strupc, $strdescription, $strtransType, $strtran
 	$CORE_LOCAL->set("ccAmtEntered",0);
 	$CORE_LOCAL->set("ccAmt",0);
 
+}
+
+/**
+  Add a item, but not until the end of the transaction
+  Use this for records that shouldn't be displayed
+*/
+static public function addQueued($upc, $description, $numflag=0, $charflag='',$regPrice=0){
+	global $CORE_LOCAL;
+	$queue = $CORE_LOCAL->get("infoRecordQueue");	
+	if (!is_array($queue)) $queue = array();
+	$queue[] = array('upc'=>$upc,'description'=>$description,
+			'numflag'=>$numflag,'charflag'=>$charflag,
+			'regPrice'=>$regPrice);
+	$CORE_LOCAL->set("infoRecordQueue", $queue);
+}
+
+/**
+   Add records queued by TransRecord::addQueued
+   to the current transaction then clear the queue.
+   Records get trans_type C, trans_status D 
+*/
+static public function emptyQueue(){
+	global $CORE_LOCAL;
+	$queue = $CORE_LOCAL->get("infoRecordQueue");	
+	if (!is_array($queue)) $queue = array();
+	foreach($queue as $record){
+		if (!isset($record['upc']) || !isset($record['description']) ||
+		    !isset($record['numflag']) || !isset($record['charflag']) ||
+		    !isset($record['regPrice'])){
+			continue; //skip incomplete
+		}
+		self::addItem($record['upc'], $record['description'], "C", "", "D", 
+			0, 0, 0, 0, $record['regPrice'], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, $record['numflag'], $record['charflag']);
+	}
+	$CORE_LOCAL->set("infoRecordQueue",array());
 }
 
 //________________________________end addItem()
@@ -448,7 +491,7 @@ static public function reverseTaxExempt() {
 	global $CORE_LOCAL;
 	self::addItem("", "** Tax Exemption Reversed **", "", "", "D", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10);
 	$CORE_LOCAL->set("TaxExempt",0);
-	Datbase::setglobalvalue("TaxExempt", 0);
+	Database::setglobalvalue("TaxExempt", 0);
 }
 
 //_____________________________end reverseTaxExempt()
@@ -487,7 +530,7 @@ static public function addCoupon($strupc, $intdepartment, $dbltotal, $foodstamp=
   @param $dbltotal coupon amount (should be negative)
 */
 static public function addhousecoupon($strupc, $intdepartment, $dbltotal) {
-	self::addItem($strupc, " * WFC Coupon", "I", "IC", "C", $intdepartment, 1, $dbltotal, $dbltotal, $dbltotal, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0);
+	self::addItem($strupc, " * Store Coupon", "I", "IC", "C", $intdepartment, 1, $dbltotal, $dbltotal, $dbltotal, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0);
 }
 
 /**
@@ -666,6 +709,58 @@ static public function addactivity($activity) {
 
 	$db->close();
 
+}
+
+/**
+  Add a log entry to the transaction table.
+  Log records do not appear onscreen on on receipts.
+
+  @param $opts keyed array. Currently valid keys are:
+   - upc
+   - description
+   - department
+   - numflag
+   - charflag
+   - amount1
+   - amount2
+
+  All keys are optional and will be left blank or zero if
+  omitted. Log records have trans_status 'X', trans_type 'L',
+  and trans_subtype 'OG'. Amount1 and Amount2 are reflected in
+  total and regPrice (respectively). The other values go in the
+  correspondingly named columns.
+*/
+static public function add_log_record($opts){
+	if (!is_array($opts)) $opts = array();
+	$upc = isset($opts['upc']) ? $opts['upc'] : '';
+	$desc = isset($opts['description']) ? $opts['description'] : '';
+	$dept = isset($opts['department']) ? $opts['department'] : 0;
+	$nflag = isset($opts['numflag']) ? $opts['numflag'] : 0;
+	$cflag = isset($opts['charflag']) ? $opts['charflag'] : '';
+	$total = isset($opts['amount1']) ? $opts['amount1'] : 0;
+	$regPrice = isset($opts['amount2']) ? $opts['amount2'] : 0;
+	
+	self::addItem($upc, $desc, 'L', 'OG', 'D', $dept, 
+		0, // quantity
+		0, // unitPrice 
+		$total, 
+		$regPrice, 
+		0, // scale 
+		0, // tax 
+		0, //foodstamp
+		0, //discount
+		0, //memDiscount 
+		0, //discountable
+		0, //discounttype
+		0, //ItemQtty
+		0, //volDiscType
+		0, //volume
+		0, //VolSpecial
+		'', //mixMatch
+		0, //matched
+		0, //voided
+		0, //cost 
+		$nflag, $cflag);
 }
 
 // ------------------------------------------------------------------------

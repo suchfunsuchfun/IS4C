@@ -107,9 +107,29 @@ class UPC extends Parser {
 				}
 			}
 			// no match; not a product, not special
-			$ret['output'] = DisplayLib::boxMsg($upc."<br /><b>"._("is not a valid item")."</b>");
-
-			return $ret; 
+			
+			/*
+			if ($CORE_LOCAL->get("requestType")!="badscan"){
+				$CORE_LOCAL->set("requestType","badscan");
+				$CORE_LOCAL->set("requestMsg",_("not a valid item").'<br />'._("enter description"));
+				$ret['main_frame'] = $my_url.'gui-modules/requestInfo.php';
+				return $ret;
+			}
+			else {
+				$ret['output'] = DisplayLib::lastpage();
+				TransRecord::addQueued($upc,$CORE_LOCAL->get("requestMsg"),0,'BS');
+				$CORE_LOCAL->set("requestMsg","");
+				$CORE_LOCAL->set("requestType","");
+				return $ret; 
+			}
+			*/
+			//TransRecord::addQueued($upc,'BADSCAN');
+			$opts = array('upc'=>$upc,'description'=>'BADSCAN');
+			TransRecord::add_log_record($opts);
+			$CORE_LOCAL->set("boxMsg",$upc." "._("not a valid item"));
+			//$ret['udpmsg'] = 'errorBeep'; // 12/12/12 this seems to stack with DisplayLib::msgbox
+			$ret['main_frame'] = $my_url."gui-modules/boxMsg2.php";
+			return $ret;
 		}
 
 		/* product exists
@@ -398,7 +418,7 @@ class UPC extends Parser {
 		$ret['redraw_footer'] = True;
 		$ret['output'] = DisplayLib::lastpage();
 
-		if ($prefetch['unitPrice']==0){
+		if ($prefetch['unitPrice']==0 && $discounttype == 0){
 			$ret['main_frame'] = $my_url.'gui-modules/priceOverride.php';
 		}
 

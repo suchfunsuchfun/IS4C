@@ -96,9 +96,9 @@ class mgrlogin extends NoInputPage {
 		<input type="password" name="reginput" tabindex="0" 
 			onblur="$('#reginput').focus();" id="reginput" />
 		</form>
-		<p />
+		<p>
 		<span id="localmsg"><?php echo _("please enter manager password"); ?></span>
-		<p />
+		</p>
 		</div>
 		</div>
 		<?php
@@ -154,6 +154,7 @@ class mgrlogin extends NoInputPage {
 		$CORE_LOCAL->set("plainmsg",_("transaction cancelled"));
 		$CORE_LOCAL->set("beep","rePoll");
 		UdpComm::udpSend("rePoll");
+		UdpComm::udpSend("termReset");
 		$CORE_LOCAL->set("ccTermOut","reset");
 		$CORE_LOCAL->set("receiptType","cancelled");
 	}

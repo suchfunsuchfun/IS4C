@@ -35,7 +35,7 @@ class MemDates extends MemberModule {
 		$infoW = $dbc->fetch_row($infoR);
 
 		$ret = "<script type=\"text/javascript\"
-			src=\"{$FANNIE_URL}src/CalendarControl.js\"
+			src=\"{$FANNIE_URL}src/CalendarControl.js\">
 			</script>";
 		$ret .= "<fieldset><legend>Membership Dates</legend>";
 		$ret .= "<table class=\"MemFormTable\" 
@@ -50,20 +50,18 @@ class MemDates extends MemberModule {
 				maxlength="10" value="%s" onclick="showCalendarControl(this);"
 				/></td></tr>',$infoW['end_date']);	
 
-
 		$ret .= "</table></fieldset>";
+
 		return $ret;
 	}
 
 	function SaveFormData($memNum){
+		global $FANNIE_ROOT;
 		$dbc = $this->db();
+		if (!class_exists("MemDatesController"))
+			include($FANNIE_ROOT.'classlib2.0/data/controllers/MemDatesController.php');
 		
-		$start = !empty($_REQUEST['MemDates_start'])?$dbc->escape($_REQUEST['MemDates_start']):'NULL';
-		$end = !empty($_REQUEST['MemDates_end'])?$dbc->escape($_REQUEST['MemDates_end']):'NULL';
-		
-		$saveQ = sprintf("UPDATE memDates SET start_date=%s,end_date=%s
-				WHERE card_no=%d",$start,$end,$memNum);
-		$test = $dbc->query($saveQ);
+		$test = MemDatesController::update($memNum,$_REQUEST['MemDates_start'],$_REQUEST['MemDates_end']);
 
 		if ($test === False)
 			return "Error: problem saving start/end dates<br />";

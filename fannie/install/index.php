@@ -20,6 +20,14 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 *********************************************************************************/
+
+
+/* --COMMENTS - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	*  5Dec2012 Eric Lee Added table memContactPrefs
+
+*/
+
 ini_set('display_errors','1');
 ?>
 <?php 
@@ -37,7 +45,9 @@ Necessities
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="update.php">Updates</a>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="module_system">Modules</a>
+<a href="plugins.php">Plugins</a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="menu.php">Menu</a>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="sample_data/extra_data.php">Sample Data</a>
 <form action=index.php method=post>
@@ -124,20 +134,17 @@ if (isset($_REQUEST['FANNIE_SERVER_DBMS'])){
 	$FANNIE_SERVER_DBMS = $_REQUEST['FANNIE_SERVER_DBMS'];
 }
 confset('FANNIE_SERVER_DBMS',"'$FANNIE_SERVER_DBMS'");
-if ($FANNIE_SERVER_DBMS == 'MYSQL'){
-	echo "<option value=MYSQL selected>MySQL</option>";
-	echo "<option value=MSSQL>SQL Server</option>";
-	echo "<option value=MYSQLI>MySQLi</option>";
-}
-else if ($FANNIE_SERVER_DBMS == 'MSSQL'){
-	echo "<option value=MYSQL>MySQL</option>";
-	echo "<option value=MSSQL selected>SQL Server</option>";
-	echo "<option value=MYSQLI>MySQLi</option>";
-}
-else {
-	echo "<option value=MYSQL>MySQL</option>";
-	echo "<option value=MSSQL>SQL Server</option>";
-	echo "<option value=MYSQLI selected>MySQLi</option>";
+$supportedTypes = array(
+	'MYSQL' => 'MySQL',
+	'MSSQL' => 'MSSQL',
+	'MYSQLI' => 'MySQLi',
+	'PDO_MYSQL' => 'PDO MySQL'
+);
+foreach ($supportedTypes as $val=>$label){
+	printf('<option value="%s" %s>%s</option>',
+		$val,
+		($FANNIE_SERVER_DBMS == $val)?'selected':'',
+		$label);
 }
 ?>
 </select>
@@ -413,14 +420,11 @@ for($i=0; $i<$FANNIE_NUM_LANES; $i++){
 	if (isset($_REQUEST["LANE_TYPE_$i"])) $FANNIE_LANES[$i]['type'] = $_REQUEST["LANE_TYPE_$i"];
 	$conf .= "'type'=>'{$FANNIE_LANES[$i]['type']}',";
 	echo "Lane ".($i+1)." Database Type: <select name=LANE_TYPE_$i>";
-	if ($FANNIE_LANES[$i]['type'] == 'MYSQL'){
-		echo "<option value=MYSQL selected>MySQL</option><option value=MSSQL>SQL Server</option><option value=MYSQLI>MySQLi</option>";
-	}
-	else if ($FANNIE_LANES[$i]['type'] == 'MSSQL'){
-		echo "<option value=MYSQL>MySQL</option><option selected value=MSSQL>SQL Server</option><option value=MYSQLI>MySQLi</option>";
-	}
-	else {
-		echo "<option value=MYSQL>MySQL</option><option value=MSSQL>SQL Server</option><option selected value=MYSQLI>MySQLi</option>";
+	foreach ($supportedTypes as $val=>$label){
+		printf('<option value="%s" %s>%s</option>',
+			$val,
+			($FANNIE_LANES[$i]['type'] == $val)?'selected':'',
+			$label);
 	}
 	echo "</select><br />";
 
@@ -613,6 +617,12 @@ function create_op_dbs($con){
 			'prodExtra','op');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
+			'prodFlags','op');
+
+	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
+			'prodPhysicalLocation','op');
+
+	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
 			'productUser','op');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
@@ -721,6 +731,9 @@ function create_op_dbs($con){
 			'memContact','op');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
+			'memContactPrefs','op');
+
+	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
 			'tenders','op');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
@@ -728,6 +741,9 @@ function create_op_dbs($con){
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
 			'houseCoupons','op');
+
+	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
+			'houseVirtualCoupons','op');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
 			'houseCouponItems','op');
@@ -791,6 +807,9 @@ function create_op_dbs($con){
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
 			'AdSaleDates','op');
+
+	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_OP_DB,
+			'custReceiptMessage','op');
 }
 
 function create_trans_dbs($con){
@@ -906,9 +925,6 @@ function create_trans_dbs($con){
 			'AR_EOM_Summary','trans');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
-			'AR_EOM_Summary_cache','trans');
-
-	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
 			'lane_config','trans');
 
 }
@@ -971,19 +987,13 @@ function create_dlogs($con){
 			'rp_receipt_header_90','trans');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
-			'memIouToday','trans');
-
-	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
-			'newBalanceToday_cust','trans');
+			'ar_live_balance','trans');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
 			'ar_history','trans');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
 			'ar_history_sum','trans');
-
-	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
-			'ar_sum_cache','trans');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
 			'stockpurchases','trans');
@@ -1041,6 +1051,9 @@ function create_delayed_dbs(){
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
 			'ar_history_today','trans');
+
+	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
+			'ar_history_today_sum','trans');
 
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_TRANS_DB,
 			'AR_statementHistory','trans');
@@ -1186,7 +1199,7 @@ function create_archive_dbs($con) {
 				(PARTITION %s 
 					VALUES LESS THAN (TO_DAYS('%s'))
 				)",$p,$limit);
-			$con->query($partR);
+			$con->query($partQ);
 		}
 	}
 
@@ -1411,6 +1424,8 @@ function create_archive_dbs($con) {
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_ARCHIVE_DB,
 			'vDeptSalesToday','arch');
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_ARCHIVE_DB,
+			'sumFlaggedSalesByDay','arch');
+	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_ARCHIVE_DB,
 			'sumMemSalesByDay','arch');
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_ARCHIVE_DB,
 			'sumMemTypeSalesByDay','arch');
@@ -1418,6 +1433,8 @@ function create_archive_dbs($con) {
 			'sumTendersByDay','arch');
 	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_ARCHIVE_DB,
 			'sumDiscountsByDay','arch');
+	create_if_needed($con,$FANNIE_SERVER_DBMS,$FANNIE_ARCHIVE_DB,
+			'reportDataCache','arch');
 }
 
 ?>

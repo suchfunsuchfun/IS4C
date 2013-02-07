@@ -23,7 +23,7 @@
 
 class ContactInfo extends MemberModule {
 
-	function ShowEditForm($memNum){
+	function ShowEditForm($memNum, $country="US"){
 		$dbc = $this->db();
 		
 		$infoQ = sprintf("SELECT CardNo,FirstName,LastName,
@@ -33,6 +33,18 @@ class ContactInfo extends MemberModule {
 				WHERE c.personNum=1 AND CardNo=%d",$memNum);
 		$infoR = $dbc->query($infoQ);
 		$infoW = $dbc->fetch_row($infoR);
+
+		$labels = array();
+		switch ($country) {
+			case "US":
+				$labels['state'] = "State";
+				$labels['zip'] = "Zip";
+				break;
+			case "CA":
+				$labels['state'] = "Province";
+				$labels['zip'] = "Postal Code";
+				break;
+		}
 
 		$ret = "<fieldset><legend>Contact Info</legend>";
 		$ret .= "<table class=\"MemFormTable\" 
@@ -60,10 +72,10 @@ class ContactInfo extends MemberModule {
 		$ret .= "<th>City</th>";
 		$ret .= sprintf('<td><input name="ContactInfo_city" maxlength="20"
 				value="%s" size="15" /></td>',$infoW['city']);
-		$ret .= "<th>State</th>";
+		$ret .= "<th>{$labels['state']}</th>";
 		$ret .= sprintf('<td><input name="ContactInfo_state" maxlength="2"
 				value="%s" size="2" /></td>',$infoW['state']);
-		$ret .= "<th>Zip</th>";
+		$ret .= "<th>{$labels['zip']}</th>";
 		$ret .= sprintf('<td><input name="ContactInfo_zip" maxlength="10"
 				value="%s" size="5" /></td></tr>',$infoW['zip']);
 
@@ -82,37 +94,33 @@ class ContactInfo extends MemberModule {
 	}
 
 	function SaveFormData($memNum){
+		global $FANNIE_ROOT;
 		$dbc = $this->db();
+		if (!class_exists("MeminfoController"))
+			include($FANNIE_ROOT.'classlib2.0/data/controllers/MeminfoController.php');
+		if (!class_exists("CustdataController"))
+			include($FANNIE_ROOT.'classlib2.0/data/controllers/CustdataController.php');
 
-		$saveQ  = sprintf("UPDATE meminfo SET
-			street=%s,
-			city=%s,
-			state=%s,
-			zip=%s,
-			phone=%s,
-			email_1=%s,
-			email_2=%s,
-			ads_OK=%d
-			WHERE card_no=%d",
-			$dbc->escape(!empty($_REQUEST['ContactInfo_addr2']) ?
-				$_REQUEST['ContactInfo_addr1']."\n".$_REQUEST['ContactInfo_addr2'] :
-				$_REQUEST['ContactInfo_addr1']),
-			$dbc->escape($_REQUEST['ContactInfo_city']),
-			$dbc->escape($_REQUEST['ContactInfo_state']),
-			$dbc->escape($_REQUEST['ContactInfo_zip']),
-			$dbc->escape($_REQUEST['ContactInfo_ph1']),
-			$dbc->escape($_REQUEST['ContactInfo_email']),
-			$dbc->escape($_REQUEST['ContactInfo_ph2']),
-			(isset($_REQUEST['ContactInfo_mail']) ? 1 : 0),
-			$memNum);
-		$test1 = $dbc->query($saveQ);
+		$MI_FIELDS = array(
+			'street' => $_REQUEST['ContactInfo_addr1'],
+			'city' => $_REQUEST['ContactInfo_city'],
+			'state' => $_REQUEST['ContactInfo_state'],
+			'zip' => $_REQUEST['ContactInfo_zip'],
+			'phone' => $_REQUEST['ContactInfo_ph1'],
+			'email_2' => $_REQUEST['ContactInfo_ph2'],
+			'email_1' => $_REQUEST['ContactInfo_email'],
+			'ads_OK' => ($_REQUEST['ContactInfo_mail'] ? 1 : 0)
+		);
+		if (!empty($_REQUEST['ContactInfo_addr2']))
+			$MI_FIELDS['street'] .= "\n".$_REQUEST['ContactInfo_addr2'];
+		$test1 = MeminfoController::update($memNum, $MI_FIELDS);
 
-		$saveQ = sprintf("UPDATE custdata SET firstname=%s,
-				lastname=%s WHERE cardno=%d AND personnum=1",
-				$dbc->escape($_REQUEST['ContactInfo_fn']),
-				$dbc->escape($_REQUEST['ContactInfo_ln']),
-				$memNum);
-		$test2 = $dbc->query($saveQ);
+		$CUST_FIELDS = array(
+			'personNum' => array(1),
+			'FirstName' => array($_REQUEST['ContactInfo_fn']),
+			'LastName' => array($_REQUEST['ContactInfo_ln'])
+		);
+		$test2 = CustdataController::update($memNum, $CUST_FIELDS);
 
 		if ($test1 === False || $test2 === False)
 			return "Error: problem saving Contact Information<br />";
@@ -122,24 +130,35 @@ class ContactInfo extends MemberModule {
 
 	function HasSearch(){ return True; }
 
-	function ShowSearchForm(){
-		return '<p><b>First Name</b>: <input type="text" name="ContactInfo_fn"
-				size="10" /> &nbsp;&nbsp;&nbsp; <b>Last Name</b>: 
-				<input type="text" name="ContactInfo_ln" size="10" />
+	function ShowSearchForm($country="US"){
+		$labels = array();
+		switch ($country) {
+			case "US":
+				$labels['state'] = "State";
+				$labels['zip'] = "Zip";
+				break;
+			case "CA":
+				$labels['state'] = "Province";
+				$labels['zip'] = "Postal Code";
+				break;
+		}
+		return "<p><b>First Name</b>: <input type='text' name='ContactInfo_fn'
+				size='10' /> &nbsp;&nbsp;&nbsp; <b>Last Name</b>: 
+				<input type='text' name='ContactInfo_ln' size='10' />
 				<br /><br />
 				<b>Address</b>: 
-				<input type="text" name="ContactInfo_addr" size="15" />
+				<input type='text' name='ContactInfo_addr' size='15' />
 				<br /><br />
 				<b>City</b>: 
-				<input type="text" name="ContactInfo_city" size="8" />
-				<b>State</b>:
-				<input type="text" name="ContactInfo_state" size="2" />
-				<b>Zip</b>:
-				<input type="text" name="ContactInfo_zip" size="5" />
+				<input type='text' name='ContactInfo_city' size='8' />
+				<b>{$labels['state']}</b>:
+				<input type='text' name='ContactInfo_state' size='2' />
+				<b>{$labels['zip']}</b>:
+				<input type='text' name='ContactInfo_zip' size='5' />
 				<br /><br />
 				<b>Email</b>: 
-				<input type="text" name="ContactInfo_email" size="15" />
-				</p>';
+				<input type='text' name='ContactInfo_email' size='15' />
+				</p>";
 	}
 
 	function GetSearchResults(){

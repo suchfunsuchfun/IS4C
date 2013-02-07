@@ -20,6 +20,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 *********************************************************************************/
+header('Location: ManufacturerMovementReport.php');
 
 include('../../config.php');
 include($FANNIE_ROOT.'src/mysql_connect.php');
@@ -62,7 +63,7 @@ if (isset($_GET['date1'])){
 	$manu = urlencode($manu);
 
 	$query = "select t.upc,p.description,
-		  t.quantity as qty,
+		  sum(t.quantity) as qty,
 		  sum(t.total),d.dept_no,d.dept_name,s.superID
 		  from $sumTable as t left join products as p
 		  on t.upc=p.upc left join prodExtra as e on p.upc = e.upc
@@ -230,13 +231,6 @@ include($FANNIE_ROOT.'src/header.html');
 <div id=main>	
 <form method = "get" action="index.php">
 	<table border="0" cellspacing="0" cellpadding="5">
-		<!--<tr>
-			<td bgcolor="#CCFF66"><a href="csvQuery.php"><font color="#CC0000">Click 
-here to create Excel Report</font></a></td>
-			<td>&nbsp;</td>
-			<td>&nbsp;</td>
-			<td>&nbsp;</td>
-		</tr>-->
 		<tr> 
 			<td> <p><b>Manufacturer</b></p>
 			<p><b>Type</b></p>
