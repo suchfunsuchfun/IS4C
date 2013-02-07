@@ -750,7 +750,7 @@ static public function deptkey($price, $dept,$ret=array()) {
 	$strprice = $price;
 	$strdept = $dept;
 	$price = $price/100;
-	$dept = $dept/10;
+	//$dept = $dept/10;
 
 	/* auto reprint on ar  */
 	if ($dept == 990){
